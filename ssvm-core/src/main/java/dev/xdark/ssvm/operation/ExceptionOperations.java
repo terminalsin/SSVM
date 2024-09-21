@@ -1,6 +1,7 @@
 package dev.xdark.ssvm.operation;
 
 import dev.xdark.ssvm.execution.ExecutionContext;
+import dev.xdark.ssvm.execution.WrappedVMException;
 import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
@@ -113,5 +114,5 @@ public interface ExceptionOperations {
 	 * @param exception VM exception to convert.
 	 * @return Java exception.
 	 */
-	Exception toJavaException(InstanceValue exception);
+	WrappedVMException toJavaException(InstanceValue exception);
 }

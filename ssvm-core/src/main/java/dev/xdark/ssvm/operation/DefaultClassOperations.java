@@ -277,6 +277,12 @@ public final class DefaultClassOperations implements ClassOperations {
 			}
 			if (!classLoader.isNull()) {
 				ops.putReference(jc.getOop(), "classLoader", "Ljava/lang/ClassLoader;", classLoader);
+
+				if (jc.getField("unnamedModule", "Ljava/lang/Module;") != null) {
+					// Set module
+					ObjectValue unnamedModule = ops.getReference(classLoader, "unnamedModule", "Ljava/lang/Module;");
+					ops.putReference(jc.getOop(), "module", "Ljava/lang/Module;", unnamedModule);
+				}
 			}
 			if (!protectionDomain.isNull()) {
 				ops.putReference(jc.getOop(), InjectedClassLayout.java_lang_Class_protectionDomain.name(), InjectedClassLayout.java_lang_Class_protectionDomain.descriptor(), protectionDomain);

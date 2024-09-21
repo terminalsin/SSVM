@@ -3,6 +3,7 @@ package dev.xdark.ssvm.operation;
 import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.VMException;
+import dev.xdark.ssvm.execution.WrappedVMException;
 import dev.xdark.ssvm.memory.management.MemoryManager;
 import dev.xdark.ssvm.mirror.member.JavaField;
 import dev.xdark.ssvm.mirror.member.JavaMethod;
@@ -80,30 +81,37 @@ public final class DefaultExceptionOperations implements ExceptionOperations {
 	}
 
 	@Override
-	public Exception toJavaException(InstanceValue oop) {
-		VMOperations ops = this.ops;
+	public WrappedVMException toJavaException(InstanceValue oop) {
+		// Exception message
 		String msg = ops.readUtf8(ops.getReference(oop, "detailMessage", "Ljava/lang/String;"));
-		Exception exception = new Exception(msg);
+
+		WrappedVMException wrappedVMException = new WrappedVMException(oop.toString(), msg);
+
+		// Get stacktrace
 		ObjectValue backtrace = ops.getReference(oop, "backtrace", "Ljava/lang/Object;");
 		if (!backtrace.isNull()) {
 			ArrayValue arrayValue = (ArrayValue) backtrace;
 			StackTraceElement[] stackTrace = IntStream.range(0, arrayValue.getLength())
-				.mapToObj(i -> {
-					InstanceValue value = (InstanceValue) arrayValue.getReference(i);
-					String declaringClass = ops.readUtf8(ops.getReference(value, "declaringClass", "Ljava/lang/String;"));
-					String methodName = ops.readUtf8(ops.getReference(value, "methodName", "Ljava/lang/String;"));
-					String fileName = ops.readUtf8(ops.getReference(value, "fileName", "Ljava/lang/String;"));
-					int line = ops.getInt(value, "lineNumber");
-					return new StackTraceElement(declaringClass, methodName, fileName, line);
-				})
-				.toArray(StackTraceElement[]::new);
+					.mapToObj(i -> {
+						InstanceValue value = (InstanceValue) arrayValue.getReference(i);
+						String declaringClass = ops.readUtf8(ops.getReference(value, "declaringClass", "Ljava/lang/String;"));
+						String methodName = ops.readUtf8(ops.getReference(value, "methodName", "Ljava/lang/String;"));
+						String fileName = ops.readUtf8(ops.getReference(value, "fileName", "Ljava/lang/String;"));
+						int line = ops.getInt(value, "lineNumber");
+						return new StackTraceElement(declaringClass, methodName, fileName, line);
+					})
+					.toArray(StackTraceElement[]::new);
 			Collections.reverse(Arrays.asList(stackTrace));
-			exception.setStackTrace(stackTrace);
+			// Set stacktrace
+			wrappedVMException.setStackTrace(stackTrace);
 		}
 		ObjectValue cause = ops.getReference(oop, "cause", "Ljava/lang/Throwable;");
 		if (!cause.isNull() && cause != oop) {
-			exception.initCause(toJavaException((InstanceValue) cause));
+			// Set cause
+			wrappedVMException.initCause(toJavaException((InstanceValue) cause));
 		}
+
+		// Init suppressed exceptions
 		ObjectValue suppressedExceptions = ops.getReference(oop, "suppressedExceptions", "Ljava/util/List;");
 		if (!suppressedExceptions.isNull()) {
 			InstanceClass cl = (InstanceClass) ops.findClass(memoryManager.nullValue(), "java/util/ArrayList", false);
@@ -113,10 +121,11 @@ public final class DefaultExceptionOperations implements ExceptionOperations {
 				ArrayValue array = (ArrayValue) ops.getReference(value, "elementData", "[Ljava/lang/Object;");
 				for (int i = 0; i < size; i++) {
 					InstanceValue ref = (InstanceValue) array.getReference(i);
-					exception.addSuppressed(ref == oop ? exception : toJavaException(ref));
+					wrappedVMException.addSuppressed(ref == oop ? wrappedVMException : toJavaException(ref));
 				}
 			}
 		}
-		return exception;
+
+		return wrappedVMException;
 	}
 }
