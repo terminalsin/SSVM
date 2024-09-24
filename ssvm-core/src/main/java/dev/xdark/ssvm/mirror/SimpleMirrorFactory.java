@@ -12,6 +12,7 @@ import dev.xdark.ssvm.mirror.type.PrimitiveClass;
 import dev.xdark.ssvm.mirror.type.SimpleArrayClass;
 import dev.xdark.ssvm.mirror.type.SimpleInstanceClass;
 import dev.xdark.ssvm.mirror.type.SimplePrimitiveClass;
+import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Type;
@@ -49,7 +50,14 @@ public final class SimpleMirrorFactory implements MirrorFactory {
 	public ArrayClass newArrayClass(JavaClass componentType) {
 		VirtualMachine vm = this.vm;
 		ArrayClass klass = new SimpleArrayClass(vm, componentType);
-		klass.setOop(vm.getMemoryManager().newClassOop(klass));
+		InstanceValue oop = vm.getMemoryManager().newClassOop(klass);
+		klass.setOop(oop);
+
+		// Set component type - Java 17
+		if (oop.getJavaClass().getField("componentType", "Ljava/lang/Class;") != null) {
+			vm.getOperations().putReference(oop, "componentType", "Ljava/lang/Class;", componentType.getOop());
+		}
+
 		vm.getClassStorage().register(klass);
 		return klass;
 	}
