@@ -63,11 +63,7 @@ public class TestUtil {
 		}
 		ObjectValue nullValue = vm.getMemoryManager().nullValue();
 		InstanceClass res = ops.defineClass(classLoader, null, result, 0, result.length, nullValue, "JVM_DefineClass");
-		try {
-			ops.initialize(res);
-		} catch (VMException ex) {
-			handleException(vm, ex);
-		}
+		ops.initialize(res);
 		if (init != null) {
 			init.accept(res);
 		}
@@ -80,29 +76,8 @@ public class TestUtil {
 			if (annotations == null || annotations.stream().noneMatch(x -> "Ldev/xdark/ssvm/VMTest;".equals(x.desc))) {
 				continue;
 			}
-			try {
-				ops.invokeVoid(m, ts.newLocals(m));
-			} catch (VMException ex) {
-				handleException(vm, ex);
-			}
+			ops.invokeVoid(m, ts.newLocals(m));
 		}
-	}
-
-	private static void handleException(VirtualMachine vm, VMException ex) {
-		InstanceValue oop = ex.getOop();
-		if (oop.getJavaClass() == vm.getSymbols().java_lang_ExceptionInInitializerError()) {
-			oop = (InstanceValue) vm.getOperations().getReference(oop, "exception", "Ljava/lang/Throwable;");
-		}
-		System.err.println(oop);
-		try {
-			JavaMethod printStackTrace = vm.getRuntimeResolver().resolveVirtualMethod(oop, "printStackTrace", "()V");
-			Locals locals = vm.getThreadStorage().newLocals(printStackTrace);
-			locals.setReference(0, oop);
-			vm.getOperations().invokeVoid(printStackTrace, locals);
-		} catch (VMException ex1) {
-			System.err.println(ex1.getOop());
-		}
-		throw ex;
 	}
 
 	public void test(Class<?> klass, int flag) {

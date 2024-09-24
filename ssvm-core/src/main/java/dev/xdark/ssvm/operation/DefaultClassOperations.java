@@ -278,8 +278,8 @@ public final class DefaultClassOperations implements ClassOperations {
 			if (!classLoader.isNull()) {
 				ops.putReference(jc.getOop(), "classLoader", "Ljava/lang/ClassLoader;", classLoader);
 
+				// Java 17 - Set module
 				if (jc.getField("unnamedModule", "Ljava/lang/Module;") != null) {
-					// Set module
 					ObjectValue unnamedModule = ops.getReference(classLoader, "unnamedModule", "Ljava/lang/Module;");
 					ops.putReference(jc.getOop(), "module", "Ljava/lang/Module;", unnamedModule);
 				}
