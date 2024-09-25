@@ -132,7 +132,9 @@ public final class VirtualThreadManager implements ThreadManager {
 
 	@Override
 	public OSThread currentOsThread() {
-		return currentThread().getOsThread();
+		JavaThread currentThread = currentThread();
+		if (currentThread == null) return null;
+		return currentThread.getOsThread();
 	}
 
 	@Override
@@ -275,7 +277,9 @@ public final class VirtualThreadManager implements ThreadManager {
 		}
 		if (th == null) {
 			th = currentThread;
-			Assertions.notNull(th, "not a Java thread");
+			if (th == null) {
+				return null;
+			}
 			if (th.attached) {
 				Assertions.check(th.foreign == Thread.currentThread(), "currentThread cache is poisoned");
 			}

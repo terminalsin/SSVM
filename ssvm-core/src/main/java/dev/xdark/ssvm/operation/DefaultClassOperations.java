@@ -495,11 +495,7 @@ public final class DefaultClassOperations implements ClassOperations {
 			klass = data.getClass(trueName);
 			if (klass == null) {
 				// Check if it is referencing "this" class
-				OSThread osThread = null;
-				try {
-					osThread = threadManager.currentOsThread();
-				} catch (PanicException ignored) {
-				}
+				OSThread osThread = threadManager.currentOsThread();
 
 				if (osThread != null) {
 					ExecutionContext<?> ctx = threadManager.currentOsThread().getBacktrace().peek();
