@@ -9,6 +9,7 @@ import dev.xdark.ssvm.classloading.ClassLoaderData;
 import dev.xdark.ssvm.classloading.ClassLoaders;
 import dev.xdark.ssvm.classloading.ClassStorage;
 import dev.xdark.ssvm.classloading.ParsedClassData;
+import dev.xdark.ssvm.execution.ExecutionContext;
 import dev.xdark.ssvm.execution.Locals;
 import dev.xdark.ssvm.execution.PanicException;
 import dev.xdark.ssvm.execution.VMException;
@@ -29,6 +30,7 @@ import dev.xdark.ssvm.mirror.type.InstanceClass;
 import dev.xdark.ssvm.mirror.type.JavaClass;
 import dev.xdark.ssvm.symbol.Primitives;
 import dev.xdark.ssvm.symbol.Symbols;
+import dev.xdark.ssvm.thread.OSThread;
 import dev.xdark.ssvm.thread.ThreadManager;
 import dev.xdark.ssvm.util.AsmUtil;
 import dev.xdark.ssvm.util.Assertions;
@@ -443,6 +445,8 @@ public final class DefaultClassOperations implements ClassOperations {
 	}
 
 	private void throwClassException(VMException ex) {
+		System.out.println("STACKTRACE");
+		ex.printStackTrace();
 		InstanceValue oop = ex.getOop();
 		Symbols symbols = this.symbols;
 		if (!symbols.java_lang_Error().isAssignableFrom(oop.getJavaClass())) {
@@ -489,6 +493,23 @@ public final class DefaultClassOperations implements ClassOperations {
 		String trueName = dimensions == 0 ? internalName : internalName.substring(dimensions + 1, internalName.length() - 1);
 		try (CloseableLock lock = data.lock()) {
 			klass = data.getClass(trueName);
+			if (klass == null) {
+				// Check if it is referencing "this" class
+				OSThread osThread = null;
+				try {
+					osThread = threadManager.currentOsThread();
+				} catch (PanicException ignored) {
+				}
+
+				if (osThread != null) {
+					ExecutionContext<?> ctx = threadManager.currentOsThread().getBacktrace().peek();
+					if (ctx != null) {
+						if (ctx.getOwner().getInternalName().equals(trueName)) {
+							klass = ctx.getOwner();
+						}
+					}
+				}
+			}
 			if (klass == null) {
 				if (classLoader.isNull()) {
 					ParsedClassData cdata = bootClassFinder.findBootClass(trueName);
