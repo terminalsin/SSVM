@@ -113,21 +113,35 @@ public class HostProcessManager implements ProcessManager {
                     bk, int.class, // envp
                     bk, // dir
                     int[].class, // fds
-                    boolean.class); // redirectErrorStream
+                    boolean.class // redirectErrorStream
+				);
             } catch (NoSuchMethodException e1) {
-                // not in generic class, try in unix class
-                try {
-                    Class<?> unixClass = Class.forName("java.lang.UNIXProcess");
-                    createProcess = unixClass.getDeclaredConstructor(
-                        bk, // cmd
-                        bk, int.class, // argv
-                        bk, int.class, // envp
-                        bk, // dir
-                        int[].class, // fds
-                        boolean.class); // redirectErrorStream
-                } catch (ClassNotFoundException | NoSuchMethodException e2) {
-                    throw new UnsupportedOperationException("Unable to find ProcessImpl mirror class for jvm runner");
-                }
+				// second method
+				try {
+					createProcess = genericClass.getDeclaredConstructor(
+						bk, // cmd
+						bk, int.class, // argv
+						bk, int.class, // envp
+						bk, // dir
+						int[].class, // fds
+						boolean.class, // forceNullOutputStream
+						boolean.class // redirectErrorStream
+					);
+				} catch (NoSuchMethodException e2) {
+					// not in generic class, try in unix class
+					try {
+						Class<?> unixClass = Class.forName("java.lang.UNIXProcess");
+						createProcess = unixClass.getDeclaredConstructor(
+							bk, // cmd
+							bk, int.class, // argv
+							bk, int.class, // envp
+							bk, // dir
+							int[].class, // fds
+							boolean.class); // redirectErrorStream
+					} catch (ClassNotFoundException | NoSuchMethodException e3) {
+						throw new UnsupportedOperationException("Unable to find ProcessImpl mirror class for jvm runner");
+					}
+				}
             }
         } catch (ClassNotFoundException e) {
             throw new IllegalStateException("Unable to find ProcessImpl mirror class for jvm runner", e);
