@@ -357,7 +357,7 @@ public class UnsafeNatives {
 				// TODO implement this in cafedude
 
 				// https://github.com/AdoptOpenJDK/openjdk-jdk8u/blob/master/hotspot/src/share/vm/oops/constantPool.cpp#L1858
-				ArrayList<CpEntry> tmp = new ArrayList<CpEntry>(cp.size() + 1);
+				ArrayList<CpEntry> tmp = new ArrayList<>(cp.size() + 1);
 				tmp.add(null);
 				for (CpEntry entry : cp) {
 					tmp.add(entry);
@@ -375,7 +375,7 @@ public class UnsafeNatives {
 				for (int i = 1; i < values.length; i++) {
 					ObjectValue v = values[i];
 					if (!v.isNull()) {
-						String utf = ((CpUtf8) cp.get(((CpString) tmp.get(i)).getIndex())).getText();
+						String utf = ((CpString) cp.get(tmp.get(i).getIndex())).getString().getText();
 						List<LdcInsnNode> ldcs = strings.get(utf);
 						if (ldcs != null) {
 							for (LdcInsnNode ldc : ldcs) {
