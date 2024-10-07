@@ -3,7 +3,7 @@ package dev.xdark.ssvm.mirror.type;
 import dev.xdark.ssvm.mirror.member.JavaField;
 import dev.xdark.ssvm.mirror.member.JavaMethod;
 import dev.xdark.ssvm.mirror.member.area.ClassArea;
-import me.coley.cafedude.classfile.ClassFile;
+import software.coley.cafedude.classfile.ClassFile;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
 

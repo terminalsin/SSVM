@@ -451,6 +451,7 @@ public final class NativeJava {
 		SystemPropsNatives.init(vm);
 		ScopedMemoryAccessNatives.init(vm);
 		ReferenceNatives.init(vm);
+		NewerJavaNatives.init(vm);
 		FileApiInstaller.create(vm).fileManager(vm.getFileManager()).install();
 		//</editor-fold>
 	}

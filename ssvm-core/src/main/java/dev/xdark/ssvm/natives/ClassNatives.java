@@ -22,15 +22,15 @@ import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.JavaValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import lombok.experimental.UtilityClass;
-import me.coley.cafedude.classfile.ClassFile;
-import me.coley.cafedude.classfile.AttributeConstants;
-import me.coley.cafedude.classfile.ClassMember;
-import me.coley.cafedude.classfile.ConstPool;
-import me.coley.cafedude.classfile.Method;
-import me.coley.cafedude.classfile.attribute.AnnotationDefaultAttribute;
-import me.coley.cafedude.classfile.attribute.AnnotationsAttribute;
-import me.coley.cafedude.classfile.attribute.Attribute;
-import me.coley.cafedude.classfile.attribute.ParameterAnnotationsAttribute;
+import software.coley.cafedude.classfile.ClassFile;
+import software.coley.cafedude.classfile.AttributeConstants;
+import software.coley.cafedude.classfile.ClassMember;
+import software.coley.cafedude.classfile.ConstPool;
+import software.coley.cafedude.classfile.Method;
+import software.coley.cafedude.classfile.attribute.AnnotationDefaultAttribute;
+import software.coley.cafedude.classfile.attribute.AnnotationsAttribute;
+import software.coley.cafedude.classfile.attribute.Attribute;
+import software.coley.cafedude.classfile.attribute.ParameterAnnotationsAttribute;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InnerClassNode;
@@ -437,11 +437,11 @@ public class ClassNatives {
 
 	private ObjectValue getAnnotationsOf(VirtualMachine vm, List<? extends ClassMember> members, ConstPool cp, String name, String desc) {
 		for (ClassMember candidate : members) {
-			String cname = cp.getUtf(candidate.getNameIndex());
+			String cname = candidate.getName().getText();
 			if (!name.equals(cname)) {
 				continue;
 			}
-			String cdesc = cp.getUtf(candidate.getTypeIndex());
+			String cdesc = candidate.getType().getText();
 			if (desc.equals(cdesc)) {
 				return getAnnotationsIn(vm, cp, candidate.getAttributes());
 			}
@@ -451,7 +451,7 @@ public class ClassNatives {
 
 	private ObjectValue getAnnotationsIn(VirtualMachine vm, ConstPool cp, List<Attribute> attributes) {
 		return attributes.stream()
-			.filter(x -> AttributeConstants.RUNTIME_VISIBLE_ANNOTATIONS.equals(cp.getUtf(x.getNameIndex())))
+			.filter(x -> AttributeConstants.RUNTIME_VISIBLE_ANNOTATIONS.equals(x.getName().getText()))
 			.findFirst()
 			.map(x -> readAnnotation(x, vm))
 			.orElse(vm.getMemoryManager().nullValue());
@@ -491,14 +491,14 @@ public class ClassNatives {
 		ConstPool cp = cf.getPool();
 		search:
 		for (Method candidate : methods) {
-			if (!name.equals(cp.getUtf(candidate.getNameIndex()))) {
+			if (!name.equals(candidate.getName().getText())) {
 				continue;
 			}
-			if (!desc.equals(cp.getUtf(candidate.getTypeIndex()))) {
+			if (!desc.equals(candidate.getType().getText())) {
 				continue;
 			}
 			for (Attribute attr : candidate.getAttributes()) {
-				String attrName = cp.getUtf(attr.getNameIndex());
+				String attrName = attr.getName().getText();
 				if (AttributeConstants.RUNTIME_VISIBLE_ANNOTATIONS.equals(attrName)) {
 					data.annotations = readAnnotation(attr, vm);
 				} else if (AttributeConstants.RUNTIME_VISIBLE_PARAMETER_ANNOTATIONS.equals(attrName)) {

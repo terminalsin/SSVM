@@ -8,10 +8,10 @@ import dev.xdark.ssvm.operation.VMOperations;
 import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import lombok.experimental.UtilityClass;
-import me.coley.cafedude.classfile.attribute.AnnotationDefaultAttribute;
-import me.coley.cafedude.classfile.attribute.AnnotationsAttribute;
-import me.coley.cafedude.classfile.attribute.ParameterAnnotationsAttribute;
-import me.coley.cafedude.io.AnnotationWriter;
+import software.coley.cafedude.classfile.attribute.AnnotationDefaultAttribute;
+import software.coley.cafedude.classfile.attribute.AnnotationsAttribute;
+import software.coley.cafedude.classfile.attribute.ParameterAnnotationsAttribute;
+import software.coley.cafedude.io.AnnotationWriter;
 import org.objectweb.asm.Type;
 
 import java.io.ByteArrayOutputStream;

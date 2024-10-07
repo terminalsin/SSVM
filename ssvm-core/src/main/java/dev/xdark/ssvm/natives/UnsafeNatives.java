@@ -20,10 +20,10 @@ import dev.xdark.ssvm.value.ArrayValue;
 import dev.xdark.ssvm.value.InstanceValue;
 import dev.xdark.ssvm.value.ObjectValue;
 import lombok.experimental.UtilityClass;
-import me.coley.cafedude.classfile.ConstPool;
-import me.coley.cafedude.classfile.constant.ConstPoolEntry;
-import me.coley.cafedude.classfile.constant.CpString;
-import me.coley.cafedude.classfile.constant.CpUtf8;
+import software.coley.cafedude.classfile.ConstPool;
+import software.coley.cafedude.classfile.constant.CpEntry;
+import software.coley.cafedude.classfile.constant.CpString;
+import software.coley.cafedude.classfile.constant.CpUtf8;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.LdcInsnNode;
@@ -357,9 +357,9 @@ public class UnsafeNatives {
 				// TODO implement this in cafedude
 
 				// https://github.com/AdoptOpenJDK/openjdk-jdk8u/blob/master/hotspot/src/share/vm/oops/constantPool.cpp#L1858
-				ArrayList<ConstPoolEntry> tmp = new ArrayList<ConstPoolEntry>(cp.size() + 1);
+				ArrayList<CpEntry> tmp = new ArrayList<CpEntry>(cp.size() + 1);
 				tmp.add(null);
-				for (ConstPoolEntry entry : cp) {
+				for (CpEntry entry : cp) {
 					tmp.add(entry);
 					if (entry.isWide()) {
 						tmp.add(null);

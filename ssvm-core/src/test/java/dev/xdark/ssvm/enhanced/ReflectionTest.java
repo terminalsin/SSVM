@@ -2,6 +2,7 @@ package dev.xdark.ssvm.enhanced;
 
 import dev.xdark.ssvm.TestUtil;
 import dev.xdark.ssvm.VMTest;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
@@ -40,7 +41,8 @@ public class ReflectionTest {
 			if (field.get(null) != str) {
 				throw new IllegalStateException();
 			}
-			String newValue = UUID.randomUUID().toString();
+			//String newValue = UUID.randomUUID().toString(); // SecureRandom is broken
+			String newValue = "hello world";
 			field.set(null, newValue);
 			if (field.get(null) != newValue) {
 				throw new IllegalStateException();

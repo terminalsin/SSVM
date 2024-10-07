@@ -494,7 +494,7 @@ public final class DefaultClassOperations implements ClassOperations {
 		try (CloseableLock lock = data.lock()) {
 			klass = data.getClass(trueName);
 			if (klass == null) {
-				// Check if it is referencing "this" class
+				// Check if it is referencing "this" class from the current context
 				OSThread osThread = threadManager.currentOsThread();
 
 				if (osThread != null) {

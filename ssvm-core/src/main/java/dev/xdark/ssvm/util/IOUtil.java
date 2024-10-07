@@ -21,33 +21,31 @@ public class IOUtil {
      * @return the file descriptor or handle
      */
     public long getHandleOrFd(FileDescriptor fd) {
-        try {
-            return fdHandle == null ? fdField.getInt(fd) : fdHandle.getLong(fd);
-        } catch (IllegalAccessException e) {
-            throw new IllegalStateException("Unable to get handle from FileDescriptor", e);
-        }
-    }
+		return fdHandleOffset == -1
+			? UnsafeUtil.get().getInt(fd, fdFieldOffset)
+			: UnsafeUtil.get().getLong(fd, fdHandleOffset);
+	}
 
-    private final Field fdField;
-    private final Field fdHandle;
+	private static final long fdFieldOffset;
+	private static final long fdHandleOffset;
 
     static {
-        Field fd = null;
-        Field handle = null;
+		long fdOffset = -1;
+		long handleOffset = -1;
         try {
-            fd = FileDescriptor.class.getDeclaredField("fd");
-            fd.setAccessible(true);
+            Field fd = FileDescriptor.class.getDeclaredField("fd");
+			fdOffset = UnsafeUtil.get().objectFieldOffset(fd);
         } catch (NoSuchFieldException e) {
             // ignore
         }
         try {
-            handle = FileDescriptor.class.getDeclaredField("handle");
-            handle.setAccessible(true);
+			Field handle = FileDescriptor.class.getDeclaredField("handle");
+			handleOffset = UnsafeUtil.get().objectFieldOffset(handle);
         } catch (NoSuchFieldException e) {
             // ignore
         }
-        fdField = fd;
-        fdHandle = handle;
+		fdFieldOffset = fdOffset;
+		fdHandleOffset = handleOffset;
     }
 
     /**

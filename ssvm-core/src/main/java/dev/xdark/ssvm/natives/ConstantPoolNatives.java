@@ -9,8 +9,8 @@ import dev.xdark.ssvm.mirror.type.JavaClass;
 import dev.xdark.ssvm.operation.VMOperations;
 import dev.xdark.ssvm.value.*;
 import lombok.experimental.UtilityClass;
-import me.coley.cafedude.classfile.ClassFile;
-import me.coley.cafedude.classfile.constant.*;
+import software.coley.cafedude.classfile.ClassFile;
+import software.coley.cafedude.classfile.constant.*;
 
 /**
  * Initializes xx/reflect/ConstantPool
@@ -42,7 +42,7 @@ public class ConstantPoolNatives {
 			InstanceClass wrapper = getInstanceCpOop(vm, ctx);
 			ClassFile cf = wrapper.getRawClassFile();
 			int index = cpRangeCheck(vm, ctx, cf);
-			ConstPoolEntry item = cf.getCp(index);
+			CpEntry item = cf.getCp(index);
 			String className = ((CpUtf8) cf.getCp(((CpClass) item).getIndex())).getText();
 			VMOperations ops = vm.getOperations();
 			JavaClass result = ops.findClass(ctx.getOwner(), className, false);
@@ -53,7 +53,7 @@ public class ConstantPoolNatives {
 			InstanceClass wrapper = getInstanceCpOop(vm, ctx);
 			ClassFile cf = wrapper.getRawClassFile();
 			int index = cpRangeCheck(vm, ctx, cf);
-			ConstPoolEntry item = cf.getCp(index);
+			CpEntry item = cf.getCp(index);
 			String className = ((CpUtf8) cf.getCp(((CpClass) item).getIndex())).getText();
 			JavaClass result = vm.getClassLoaders().getClassLoaderData(ctx.getOwner()).getClass(className);
 			if (result == null) {
@@ -69,7 +69,7 @@ public class ConstantPoolNatives {
 			InstanceClass wrapper = getInstanceCpOop(vm, ctx);
 			ClassFile cf = wrapper.getRawClassFile();
 			int index = cpRangeCheck(vm, ctx, cf);
-			ConstPoolEntry item = cf.getCp(index);
+			CpEntry item = cf.getCp(index);
 			ctx.setResult(((CpInt) item).getValue());
 			return Result.ABORT;
 		});
@@ -77,7 +77,7 @@ public class ConstantPoolNatives {
 			InstanceClass wrapper = getInstanceCpOop(vm, ctx);
 			ClassFile cf = wrapper.getRawClassFile();
 			int index = cpRangeCheck(vm, ctx, cf);
-			ConstPoolEntry item = cf.getCp(index);
+			CpEntry item = cf.getCp(index);
 			ctx.setResult(((CpLong) item).getValue());
 			return Result.ABORT;
 		});
@@ -85,7 +85,7 @@ public class ConstantPoolNatives {
 			InstanceClass wrapper = getInstanceCpOop(vm, ctx);
 			ClassFile cf = wrapper.getRawClassFile();
 			int index = cpRangeCheck(vm, ctx, cf);
-			ConstPoolEntry item = cf.getCp(index);
+			CpEntry item = cf.getCp(index);
 			ctx.setResult(((CpFloat) item).getValue());
 			return Result.ABORT;
 		});
@@ -93,7 +93,7 @@ public class ConstantPoolNatives {
 			InstanceClass wrapper = getInstanceCpOop(vm, ctx);
 			ClassFile cf = wrapper.getRawClassFile();
 			int index = cpRangeCheck(vm, ctx, cf);
-			ConstPoolEntry item = cf.getCp(index);
+			CpEntry item = cf.getCp(index);
 			ctx.setResult(((CpDouble) item).getValue());
 			return Result.ABORT;
 		});
@@ -101,7 +101,7 @@ public class ConstantPoolNatives {
 			InstanceClass wrapper = getInstanceCpOop(vm, ctx);
 			ClassFile cf = wrapper.getRawClassFile();
 			int index = cpRangeCheck(vm, ctx, cf);
-			ConstPoolEntry item = cf.getCp(index);
+			CpEntry item = cf.getCp(index);
 			ctx.setResult(vm.getOperations().newUtf8(((CpUtf8) item).getText()));
 			return Result.ABORT;
 		});

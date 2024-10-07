@@ -94,11 +94,15 @@ public class HostProcessManager implements ProcessManager {
         try {
             Class<?> genericClass = Class.forName("java.lang.ProcessImpl");
             try {
-                genericClass = Class.forName("java.lang.ProcessImpl");
                 createProcess = genericClass.getDeclaredConstructor(String[].class, String.class, String.class, long[].class, boolean.class);
                 return;
-            } catch (ClassNotFoundException | NoSuchMethodException e) {
-                // try next
+            } catch (NoSuchMethodException e) {
+				try {
+					createProcess = genericClass.getDeclaredConstructor(String[].class, String.class, String.class, long[].class, boolean.class, boolean.class);
+					return;
+				} catch (NoSuchMethodException e1) {
+					// try next
+				}
             }
             isUnixProcessImpl = true;
             Class<byte[]> bk = byte[].class;
