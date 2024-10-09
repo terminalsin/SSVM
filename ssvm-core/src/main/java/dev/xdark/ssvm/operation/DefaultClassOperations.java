@@ -445,8 +445,6 @@ public final class DefaultClassOperations implements ClassOperations {
 	}
 
 	private void throwClassException(VMException ex) {
-		System.out.println("STACKTRACE");
-		ex.printStackTrace();
 		InstanceValue oop = ex.getOop();
 		Symbols symbols = this.symbols;
 		if (!symbols.java_lang_Error().isAssignableFrom(oop.getJavaClass())) {
