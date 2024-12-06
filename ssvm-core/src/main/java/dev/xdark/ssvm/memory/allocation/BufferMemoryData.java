@@ -11,9 +11,12 @@ import java.nio.ByteOrder;
 import java.util.Arrays;
 
 /**
- * Memory data backed by byte buffer.
+ * Memory data backed by byte buffer that avoids unaligned volatile access on ARM.
  *
- * @author xDark
+ * On ARM, unaligned accesses via Unsafe can cause SIGBUS. This class checks alignment
+ * for volatile reads/writes and falls back to manual byte-by-byte operations if misaligned.
+ *
+ * Note: This may lose some volatile semantics if misaligned. Always ensure alignment.
  */
 @RequiredArgsConstructor
 final class BufferMemoryData implements MemoryData {
@@ -75,52 +78,96 @@ final class BufferMemoryData implements MemoryData {
 
 	@Override
 	public long readLongVolatile(long offset) {
-		return volatileAccess().getLong(checkIndex(offset, 8));
+		int pos = checkIndex(offset, 8);
+		if (!isAligned(pos, 8)) {
+			// Fallback: manual assembly
+			return assembleLong(pos);
+		}
+		return volatileAccess().getLong(pos);
 	}
 
 	@Override
 	public int readIntVolatile(long offset) {
-		return volatileAccess().getInt(checkIndex(offset, 4));
+		int pos = checkIndex(offset, 4);
+		if (!isAligned(pos, 4)) {
+			// Fallback: manual assembly
+			return assembleInt(pos);
+		}
+		return volatileAccess().getInt(pos);
 	}
 
 	@Override
 	public char readCharVolatile(long offset) {
-		return volatileAccess().getChar(checkIndex(offset, 2));
+		int pos = checkIndex(offset, 2);
+		if (!isAligned(pos, 2)) {
+			// Fallback
+			return (char) assembleShort(pos);
+		}
+		return volatileAccess().getChar(pos);
 	}
 
 	@Override
 	public short readShortVolatile(long offset) {
-		return volatileAccess().getShort(checkIndex(offset, 2));
+		int pos = checkIndex(offset, 2);
+		if (!isAligned(pos, 2)) {
+			// Fallback
+			return assembleShort(pos);
+		}
+		return volatileAccess().getShort(pos);
 	}
 
 	@Override
 	public byte readByteVolatile(long offset) {
-		return volatileAccess().getByte(checkIndex(offset, 1));
+		// Single byte always aligned
+		int pos = checkIndex(offset, 1);
+		return volatileAccess().getByte(pos);
 	}
 
 	@Override
 	public void writeLongVolatile(long offset, long value) {
-		volatileAccess().putLong(checkIndex(offset, 8), value);
+		int pos = checkIndex(offset, 8);
+		if (!isAligned(pos, 8)) {
+			disassembleLong(pos, value);
+			return;
+		}
+		volatileAccess().putLong(pos, value);
 	}
 
 	@Override
 	public void writeIntVolatile(long offset, int value) {
-		volatileAccess().putInt(checkIndex(offset, 4), value);
+		int pos = checkIndex(offset, 4);
+		if (!isAligned(pos, 4)) {
+			disassembleInt(pos, value);
+			return;
+		}
+		volatileAccess().putInt(pos, value);
 	}
 
 	@Override
 	public void writeCharVolatile(long offset, char value) {
-		volatileAccess().putChar(checkIndex(offset, 2), value);
+		int pos = checkIndex(offset, 2);
+		if (!isAligned(pos, 2)) {
+			disassembleShort(pos, (short) value);
+			return;
+		}
+		volatileAccess().putChar(pos, value);
 	}
 
 	@Override
 	public void writeShortVolatile(long offset, short value) {
-		volatileAccess().putShort(checkIndex(offset, 2), value);
+		int pos = checkIndex(offset, 2);
+		if (!isAligned(pos, 2)) {
+			disassembleShort(pos, value);
+			return;
+		}
+		volatileAccess().putShort(pos, value);
 	}
 
 	@Override
 	public void writeByteVolatile(long offset, byte value) {
-		volatileAccess().putByte(checkIndex(offset, 1), value);
+		// Single byte always aligned
+		int pos = checkIndex(offset, 1);
+		volatileAccess().putByte(pos, value);
 	}
 
 	@Override
@@ -150,7 +197,8 @@ final class BufferMemoryData implements MemoryData {
 		if (dst instanceof BufferMemoryData) {
 			ByteBuffer dstBuf = ((BufferMemoryData) dst).buffer;
 			int $srcOffset = validate(srcOffset);
-			copyOrder(((ByteBuffer) dstBuf.slice().position(validate(dstOffset)))).put((ByteBuffer) buffer.slice().position($srcOffset).limit($srcOffset + validate(bytes)));
+			copyOrder(((ByteBuffer) dstBuf.slice().position(validate(dstOffset))))
+				.put((ByteBuffer) buffer.slice().position($srcOffset).limit($srcOffset + validate(bytes)));
 		} else {
 			int start = validate(dstOffset);
 			int $bytes = validate(bytes);
@@ -287,16 +335,15 @@ final class BufferMemoryData implements MemoryData {
 	@Override
 	public void read(long srcOffset, byte[] array, int arrayOffset, int length) {
 		checkIndex(srcOffset, length);
-		ByteBuffer buffer = this.buffer;
-		buffer = buffer.slice();
+		ByteBuffer buffer = this.buffer.slice();
 		buffer.position((int) srcOffset);
 		buffer.get(array, arrayOffset, length);
 	}
 
 	@Override
 	public void read(long srcOffset, long[] array, int arrayOffset, int length) {
+		checkIndex(srcOffset, length * 8);
 		ByteBuffer buffer = this.buffer;
-		checkIndex(srcOffset, length);
 		if (fastAccess(buffer)) {
 			srcOffset += buffer.arrayOffset();
 			byte[] data = buffer.array();
@@ -312,8 +359,8 @@ final class BufferMemoryData implements MemoryData {
 
 	@Override
 	public void read(long srcOffset, double[] array, int arrayOffset, int length) {
+		checkIndex(srcOffset, length * 8);
 		ByteBuffer buffer = this.buffer;
-		checkIndex(srcOffset, length);
 		if (fastAccess(buffer)) {
 			srcOffset += buffer.arrayOffset();
 			byte[] data = buffer.array();
@@ -329,8 +376,8 @@ final class BufferMemoryData implements MemoryData {
 
 	@Override
 	public void read(long srcOffset, int[] array, int arrayOffset, int length) {
+		checkIndex(srcOffset, length * 4);
 		ByteBuffer buffer = this.buffer;
-		checkIndex(srcOffset, length);
 		if (fastAccess(buffer)) {
 			srcOffset += buffer.arrayOffset();
 			byte[] data = buffer.array();
@@ -346,8 +393,8 @@ final class BufferMemoryData implements MemoryData {
 
 	@Override
 	public void read(long srcOffset, float[] array, int arrayOffset, int length) {
+		checkIndex(srcOffset, length * 4);
 		ByteBuffer buffer = this.buffer;
-		checkIndex(srcOffset, length);
 		if (fastAccess(buffer)) {
 			srcOffset += buffer.arrayOffset();
 			byte[] data = buffer.array();
@@ -363,8 +410,8 @@ final class BufferMemoryData implements MemoryData {
 
 	@Override
 	public void read(long srcOffset, char[] array, int arrayOffset, int length) {
+		checkIndex(srcOffset, length * 2);
 		ByteBuffer buffer = this.buffer;
-		checkIndex(srcOffset, length);
 		if (fastAccess(buffer)) {
 			srcOffset += buffer.arrayOffset();
 			byte[] data = buffer.array();
@@ -380,8 +427,8 @@ final class BufferMemoryData implements MemoryData {
 
 	@Override
 	public void read(long srcOffset, short[] array, int arrayOffset, int length) {
+		checkIndex(srcOffset, length * 2);
 		ByteBuffer buffer = this.buffer;
-		checkIndex(srcOffset, length);
 		if (fastAccess(buffer)) {
 			srcOffset += buffer.arrayOffset();
 			byte[] data = buffer.array();
@@ -397,8 +444,8 @@ final class BufferMemoryData implements MemoryData {
 
 	@Override
 	public void read(long srcOffset, boolean[] array, int arrayOffset, int length) {
-		ByteBuffer buffer = this.buffer;
 		checkIndex(srcOffset, length);
+		ByteBuffer buffer = this.buffer;
 		if (fastAccess(buffer)) {
 			srcOffset += buffer.arrayOffset();
 			byte[] data = buffer.array();
@@ -447,11 +494,8 @@ final class BufferMemoryData implements MemoryData {
 	public MemoryData slice(long offset, long bytes) {
 		int $offset = validate(offset);
 		return new SliceMemoryData(this, $offset, validate(bytes));
-		// return MemoryData.buffer(copyOrder(((ByteBuffer) buffer.slice().position($offset).limit($offset + validate(bytes))).slice()));
 	}
 
-	// This is so stupid, calling ByteBuffer#slice()
-	// resets buffer's byte order, copy it back
 	private ByteBuffer copyOrder(ByteBuffer buffer) {
 		return buffer.order(this.buffer.order());
 	}
@@ -484,5 +528,55 @@ final class BufferMemoryData implements MemoryData {
 
 	private static boolean isNativeOrder(ByteBuffer buffer) {
 		return buffer.order() == ByteOrder.nativeOrder();
+	}
+
+	private static boolean isAligned(int pos, int alignment) {
+		return (pos & (alignment - 1)) == 0;
+	}
+
+	private long assembleLong(int pos) {
+		return ((long) buffer.get(pos) & 0xFF)
+			| (((long) buffer.get(pos + 1) & 0xFF) << 8)
+			| (((long) buffer.get(pos + 2) & 0xFF) << 16)
+			| (((long) buffer.get(pos + 3) & 0xFF) << 24)
+			| (((long) buffer.get(pos + 4) & 0xFF) << 32)
+			| (((long) buffer.get(pos + 5) & 0xFF) << 40)
+			| (((long) buffer.get(pos + 6) & 0xFF) << 48)
+			| (((long) buffer.get(pos + 7) & 0xFF) << 56);
+	}
+
+	private int assembleInt(int pos) {
+		return (buffer.get(pos) & 0xFF)
+			| ((buffer.get(pos + 1) & 0xFF) << 8)
+			| ((buffer.get(pos + 2) & 0xFF) << 16)
+			| ((buffer.get(pos + 3) & 0xFF) << 24);
+	}
+
+	private short assembleShort(int pos) {
+		return (short) ((buffer.get(pos) & 0xFF)
+			| ((buffer.get(pos + 1) & 0xFF) << 8));
+	}
+
+	private void disassembleLong(int pos, long value) {
+		buffer.put(pos,     (byte)( value        & 0xFF));
+		buffer.put(pos + 1, (byte)((value >> 8)  & 0xFF));
+		buffer.put(pos + 2, (byte)((value >> 16) & 0xFF));
+		buffer.put(pos + 3, (byte)((value >> 24) & 0xFF));
+		buffer.put(pos + 4, (byte)((value >> 32) & 0xFF));
+		buffer.put(pos + 5, (byte)((value >> 40) & 0xFF));
+		buffer.put(pos + 6, (byte)((value >> 48) & 0xFF));
+		buffer.put(pos + 7, (byte)((value >> 56) & 0xFF));
+	}
+
+	private void disassembleInt(int pos, int value) {
+		buffer.put(pos,     (byte)( value       & 0xFF));
+		buffer.put(pos + 1, (byte)((value >> 8) & 0xFF));
+		buffer.put(pos + 2, (byte)((value >>16) & 0xFF));
+		buffer.put(pos + 3, (byte)((value >>24) & 0xFF));
+	}
+
+	private void disassembleShort(int pos, short value) {
+		buffer.put(pos,     (byte)( value      & 0xFF));
+		buffer.put(pos + 1, (byte)((value>>8)  & 0xFF));
 	}
 }
